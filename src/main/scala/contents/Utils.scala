@@ -14,7 +14,7 @@ object Utils {
   val patternAtLeastOneNumber = """\d+""".r
 
   def getSource(link: String) = {
-    val source = new InputSource(link) //Source.fromURL("http://classificados.inf.ufsc.br/")
+    val source = new InputSource(link)
     val parserFactory = new org.ccil.cowan.tagsoup.jaxp.SAXFactoryImpl
     val parser = parserFactory.newSAXParser()
     val adapter = new scala.xml.parsing.NoBindingFactoryAdapter
@@ -23,13 +23,10 @@ object Utils {
 
   def getPrice(link: String) = {
     val source = getSource(link).mkString
-    //printlnsep(source)
-    val pattern = """Preço.*\s*.*\d+""".r //""">Preço<.*\s*\d+""".r
+    val pattern = """Preço.*\s*.*\d+""".r
     val aux = pattern.findAllIn(source)
-    //"\\d\\d+".r.findAllIn())
     val price = aux flatMap (l => "\\d\\d+".r.findAllIn(l)) //)
-    if (price.hasNext) price.next
-    else "0"
+    if (price.hasNext) price.next else "0"
 
   }
   def getItemsFromURL(link: String) = {
@@ -37,8 +34,7 @@ object Utils {
     val items = (source \\ "a").map { tag =>
       val hrefString = (tag \ "@href").mkString
       val text = tag.text
-      val price = if (hrefString.contains("detail")) getPrice(ufscLink + hrefString)
-      else "0"
+      val price = if (hrefString.contains("detail")) getPrice(ufscLink + hrefString) else "0"
       val id = patternAtLeastOneNumber.findFirstIn(hrefString).getOrElse("0").toInt
       Item(id, text, ufscLink + hrefString.mkString, price)
     }
@@ -46,12 +42,8 @@ object Utils {
 
   }
 
-  def getMonitores() = {
-    val items = getItemsFromURL(getAllCategories().get(monitoresDeVideo).head)
-    items
+  def getMonitores = getItemsFromURL(getAllCategories().get(monitoresDeVideo).head)
 
-  }
-  
   def getAllItems = {
     val allURLsCat = getAllCategories
     val items = allURLsCat.flatMap { case (c, link) => getItemsFromURL(link) }
@@ -59,13 +51,13 @@ object Utils {
   }
   def getAllCategories() = {
     val source = getSource(ufscLink)
-    val t = (source \\ "a").map { tag =>
+    val categoriesToLink = (source \\ "a").map { tag =>
       val hrefString = (tag \ "@href")
       val isSubCat = !tag.text.startsWith("  ")
       val isLinkToCatId = hrefString.mkString.contains("catid")
       (tag.text.trim() -> (ufscLink + (hrefString.mkString).trim()))
     }
-    t.filter {
+    categoriesToLink.filter {
       case (k, v) => (!k.matches(".*[\\d]+.*") && v.matches(".*?catid=[\\d]+"))
     }.toMap
   }

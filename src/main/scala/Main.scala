@@ -11,6 +11,8 @@ import scalaz.concurrent.Actors
 import akka.actor.ActorSystem
 import contents.Utils
 import mail.EmailService
+import model.Master
+import model.WorkerWeb
 //Use the system's dispatcher as ExecutionContext
 
 object WatcherInfClassificados {
@@ -22,8 +24,23 @@ object WatcherInfClassificados {
       database.createTables
 
     val system = ActorSystem("MySystem")
-    import system.dispatcher
-    system.scheduler.schedule(0 second, 30 minute)(watch)
+    val categories = Utils.getAllCategories
+	val nWorkers = categories.size
+	val db = new SQLite("actor")
+	val master = system.actorOf(Props(new Master(nWorkers, db)))
+	//println(db.WAL)
+	if (!db.tableNames.contains("Item"))	
+		db.createTables
+	val workers = categories.map{ case (k, v) =>
+	system.actorOf(Props(new WorkerWeb(v,master, db)))
+	}
+	workers.foreach(_ ! 'getItems)
+	
+    
+    
+    
+   // import system.dispatcher
+   // system.scheduler.schedule(0 second, 30 minute)(watch)
   }
 
   def watch {

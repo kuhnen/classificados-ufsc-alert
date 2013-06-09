@@ -12,7 +12,7 @@ class DatabaseSpec extends FunSuite with BeforeAndAfter {
   before {
     database = new SQLite("test")
     database.createTables
-    items = Utils.getMonitores();
+    items = Utils.getMonitores
   }
 
   after {
@@ -59,11 +59,4 @@ class DatabaseSpec extends FunSuite with BeforeAndAfter {
       database.createTables
       database.insert(items)
     }
-  
-  test("actors Putting stuff on dataBase") {
-        
-    
-  }
-	 
-   
 }

@@ -6,19 +6,16 @@ import akka.event.Logging
 import akka.actor.ActorRef
 import contents.Utils
 import db.SQLite
+import mail.EmailService
+import scala.collection.mutable.LinkedList
 
 class WorkerWeb(link: String, master: ActorRef, db: SQLite) extends Actor {
   val log = Logging(context.system, this)
   def receive = {
     case 'getItems =>
-      
-      var items = Utils.getItemsFromURL(link)
-      val itemss = items.filterNot(db.exists)
-      master ! itemss
-    case "test" ⇒
-      log.info("received test")
-      master ! 'done
-
+      val items = Utils.getItemsFromURL(link)
+      val newItems = items.filterNot(db.exists)
+      master ! newItems
     case _ ⇒ log.info("received unknown message")
   }
 
@@ -26,28 +23,25 @@ class WorkerWeb(link: String, master: ActorRef, db: SQLite) extends Actor {
 
 class Master(var worksToBeDone: Int, db: SQLite) extends Actor {
   val log = Logging(context.system, this)
-  var itemsTotal = collection.mutable.LinkedList.empty[Item]
+  var itemsTotal = List.empty[Item] //collection.mutable.LinkedList.empty[Item]
 
   def receive = {
     case itemsReady: List[Any] ⇒
       worksToBeDone = worksToBeDone - 1
-      log.info("DOING WORK")
-      
-     // val itemsM = collection.mutable.LinkedList(itemsReady).asInstanceOf[collection.mutable.LinkedList[Item]]
-    //  val itemsToSend = items.filterNot(db.exists)
-      //db.insert(itemsToSend)
-      //itemsTotal = itemsTotal ++ itemsReady.asInstanceOf[List[Item]]
-    //log.info(itemsTotal.mkString)
-       db.insert(itemsReady.asInstanceOf[List[Item]])
-      if (worksToBeDone == 0){
-       
-        log.info("Done!!!!" + itemsTotal.mkString)
-       
-      }else
-      log.info(worksToBeDone + " to GO!!!!!!!")
-
+      itemsTotal = itemsTotal ::: itemsReady.asInstanceOf[List[Item]]
+      db.insert(itemsReady.asInstanceOf[List[Item]])
+      //log.info(worksToBeDone + " to GO!!!!!!!")
+      if (worksToBeDone == 0) {
+        if (!itemsTotal.isEmpty){
+        val message = itemsTotal.mkString("\n")
+        EmailService.sendMessage(message)
+        println(message)
+        }
+        
+        context.system.shutdown
+      }
     case _ ⇒ log.info("received unknown message")
- 
+
   }
 
 }

@@ -13,7 +13,7 @@ object EmailService {
     val email = new SimpleEmail();
     email.setHostName("smtp.googlemail.com");
     email.setSmtpPort(465);
-    email.setAuthenticator(new DefaultAuthenticator("*****", "*****"));
+    email.setAuthenticator(new DefaultAuthenticator("******", "*****"));
     email.setSSLOnConnect(true);
     email.setFrom("andrekuhnen@gmail.com")
     email.addTo("andrekuhnen@gmail.com")
